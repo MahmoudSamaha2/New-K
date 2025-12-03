@@ -362,13 +362,25 @@ const Wizard: React.FC<WizardProps> = ({ initialData, onComplete }) => {
                                 </div>
                              </div>
                              <div className="space-y-1">
-                                <label className="text-xs text-stone-400 uppercase tracking-wider pl-1">Total Attendees (Max 10)</label>
+                                <label className="text-xs text-stone-400 uppercase tracking-wider pl-1">Total Attendees</label>
                                 <input 
                                     type="number" 
                                     min="1"
                                     max="10"
                                     value={formData.attendees}
-                                    onChange={(e) => handleInputChange('attendees', e.target.value)}
+                                    onChange={(e) => {
+                                        const val = e.target.value;
+                                        if (val === '') {
+                                            handleInputChange('attendees', '');
+                                            return;
+                                        }
+                                        const num = parseInt(val, 10);
+                                        if (!isNaN(num)) {
+                                            if (num < 1) handleInputChange('attendees', '1');
+                                            else if (num > 10) handleInputChange('attendees', '10');
+                                            else handleInputChange('attendees', val);
+                                        }
+                                    }}
                                     className="w-full bg-stone-900/50 border border-stone-600 rounded-lg p-3 text-sm md:text-base text-white placeholder-stone-600 focus:outline-none focus:border-gold-300 transition-colors"
                                 />
                              </div>

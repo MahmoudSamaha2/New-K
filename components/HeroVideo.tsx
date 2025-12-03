@@ -146,7 +146,7 @@ const HeroVideo = forwardRef<HeroVideoHandle, HeroVideoProps>(({ onComplete, onR
 
   return (
     <div 
-      className={`absolute inset-0 bg-black overflow-hidden select-none ${className}`}
+      className={`absolute inset-0 bg-black overflow-hidden select-none touch-none ${className}`}
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
     >
@@ -208,4 +208,3 @@ const HeroVideo = forwardRef<HeroVideoHandle, HeroVideoProps>(({ onComplete, onR
 });
 
 export default HeroVideo;
-    
