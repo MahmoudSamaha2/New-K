@@ -1,3 +1,4 @@
+
 export interface FormData {
   nubianNight: string;
   wedding: string;
@@ -6,6 +7,7 @@ export interface FormData {
   postWedding: string;
   returnPlan?: string;
   name: string;
+  countryCode: string;
   phone: string;
   attendees: string;
   notes: string;

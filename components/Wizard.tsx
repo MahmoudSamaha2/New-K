@@ -1,3 +1,4 @@
+
 import React, { useState, ReactNode } from 'react';
 import { FormData } from '../types';
 
@@ -77,6 +78,19 @@ const RadioOption: React.FC<RadioOptionProps> = ({ label, selected, onClick }) =
     );
 };
 
+const COUNTRY_CODES = [
+    { code: '+20', flag: 'EG' },
+    { code: '+971', flag: 'AE' },
+    { code: '+966', flag: 'SA' },
+    { code: '+965', flag: 'KW' },
+    { code: '+974', flag: 'QA' },
+    { code: '+44', flag: 'UK' },
+    { code: '+1', flag: 'US' },
+    { code: '+33', flag: 'FR' },
+    { code: '+49', flag: 'DE' },
+    { code: '+39', flag: 'IT' },
+];
+
 
 // --- Main Wizard Component ---
 
@@ -150,7 +164,7 @@ const Wizard: React.FC<WizardProps> = ({ initialData, onComplete }) => {
       case 4: return !!formData.accommodation;
       case 5: return !!formData.postWedding;
       case 6: return !!formData.returnPlan; 
-      case 7: return !!formData.name && !!formData.phone && !!formData.attendees;
+      case 7: return !!formData.name && !!formData.phone && formData.phone.length >= 6 && !!formData.attendees;
       default: return false;
     }
   };
@@ -293,9 +307,10 @@ const Wizard: React.FC<WizardProps> = ({ initialData, onComplete }) => {
         case 7:
             return (
                  <div className="flex flex-col h-full justify-end animate-fade-in">
-                    <div className="bg-stone-900/60 backdrop-blur-md border border-white/10 p-6 rounded-t-3xl shadow-2xl h-[85%] overflow-y-auto no-scrollbar">
+                    {/* Changed h-[85%] to h-auto max-h-[85%] to allow shrinking and reduce whitespace */}
+                    <div className="bg-stone-900/70 backdrop-blur-xl border border-white/10 p-5 md:p-6 rounded-t-3xl shadow-2xl h-auto max-h-[85%] overflow-y-auto no-scrollbar">
                         <div className="text-gold-300 text-xs font-serif uppercase tracking-widest mb-2">Final Step</div>
-                        <h3 className="text-3xl font-cinzel text-white mb-2">Contact Details</h3>
+                        <h3 className="text-2xl md:text-3xl font-cinzel text-white mb-2">Contact Details</h3>
                         <p className="text-stone-300 text-xs md:text-sm leading-relaxed mb-4 md:mb-6">Just so we can stay connected.</p>
                         
                         <div className="space-y-3 md:space-y-4">
@@ -306,18 +321,45 @@ const Wizard: React.FC<WizardProps> = ({ initialData, onComplete }) => {
                                     placeholder="Your full name"
                                     value={formData.name}
                                     onChange={(e) => handleInputChange('name', e.target.value)}
-                                    className="w-full bg-stone-900/50 border border-stone-600 rounded-lg p-2 md:p-3 text-sm md:text-base text-white placeholder-stone-600 focus:outline-none focus:border-gold-300 transition-colors"
+                                    className="w-full bg-stone-900/50 border border-stone-600 rounded-lg p-3 text-sm md:text-base text-white placeholder-stone-600 focus:outline-none focus:border-gold-300 transition-colors"
                                 />
                              </div>
                              <div className="space-y-1">
                                 <label className="text-xs text-stone-400 uppercase tracking-wider pl-1">Phone</label>
-                                <input 
-                                    type="tel" 
-                                    placeholder="+20 ..."
-                                    value={formData.phone}
-                                    onChange={(e) => handleInputChange('phone', e.target.value)}
-                                    className="w-full bg-stone-900/50 border border-stone-600 rounded-lg p-2 md:p-3 text-sm md:text-base text-white placeholder-stone-600 focus:outline-none focus:border-gold-300 transition-colors"
-                                />
+                                <div className="flex gap-2">
+                                    <div className="relative w-[110px] flex-shrink-0 group">
+                                        <select
+                                            value={formData.countryCode || '+20'}
+                                            onChange={(e) => handleInputChange('countryCode', e.target.value)}
+                                            className="w-full h-full appearance-none bg-stone-900/50 border border-stone-600 rounded-lg pl-3 pr-8 py-3 text-sm md:text-base text-white focus:outline-none focus:border-gold-300 transition-colors cursor-pointer"
+                                        >
+                                            {COUNTRY_CODES.map((c) => (
+                                                <option key={c.code} value={c.code} className="bg-stone-900 text-white">
+                                                    {c.flag} {c.code}
+                                                </option>
+                                            ))}
+                                            <option value="other" className="bg-stone-900 text-white">Other</option>
+                                        </select>
+                                        {/* Custom Arrow */}
+                                        <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-stone-400 group-hover:text-gold-300 transition-colors">
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                            </svg>
+                                        </div>
+                                    </div>
+                                    <input 
+                                        type="tel" 
+                                        inputMode="numeric"
+                                        placeholder="1234567890"
+                                        value={formData.phone}
+                                        onChange={(e) => {
+                                            // Validate: Only numbers
+                                            const val = e.target.value.replace(/\D/g, '');
+                                            handleInputChange('phone', val);
+                                        }}
+                                        className="flex-1 bg-stone-900/50 border border-stone-600 rounded-lg p-3 text-sm md:text-base text-white placeholder-stone-600 focus:outline-none focus:border-gold-300 transition-colors"
+                                    />
+                                </div>
                              </div>
                              <div className="space-y-1">
                                 <label className="text-xs text-stone-400 uppercase tracking-wider pl-1">Total Attendees (Max 10)</label>
@@ -327,7 +369,7 @@ const Wizard: React.FC<WizardProps> = ({ initialData, onComplete }) => {
                                     max="10"
                                     value={formData.attendees}
                                     onChange={(e) => handleInputChange('attendees', e.target.value)}
-                                    className="w-full bg-stone-900/50 border border-stone-600 rounded-lg p-2 md:p-3 text-sm md:text-base text-white placeholder-stone-600 focus:outline-none focus:border-gold-300 transition-colors"
+                                    className="w-full bg-stone-900/50 border border-stone-600 rounded-lg p-3 text-sm md:text-base text-white placeholder-stone-600 focus:outline-none focus:border-gold-300 transition-colors"
                                 />
                              </div>
                              <div className="space-y-1">
@@ -337,15 +379,15 @@ const Wizard: React.FC<WizardProps> = ({ initialData, onComplete }) => {
                                     value={formData.notes}
                                     onChange={(e) => handleInputChange('notes', e.target.value)}
                                     rows={2}
-                                    className="w-full bg-stone-900/50 border border-stone-600 rounded-lg p-2 md:p-3 text-sm md:text-base text-white placeholder-stone-600 focus:outline-none focus:border-gold-300 transition-colors resize-none"
+                                    className="w-full bg-stone-900/50 border border-stone-600 rounded-lg p-3 text-sm md:text-base text-white placeholder-stone-600 focus:outline-none focus:border-gold-300 transition-colors resize-none"
                                 />
                              </div>
                         </div>
                         
-                        <div className="pt-4 md:pt-6 pb-2 text-center">
+                        <div className="pt-3 text-center">
                             <p className="text-[10px] md:text-xs text-stone-500 leading-relaxed">
                                 Our lovely friend Nourhan will be in touch.<br/>
-                                You can also reach her at: +20 123 456 7890
+                                You can also reach her at: +20 122 0105839
                             </p>
                         </div>
                     </div>
@@ -394,7 +436,7 @@ const Wizard: React.FC<WizardProps> = ({ initialData, onComplete }) => {
                             <span className="hidden sm:inline">Submitting...</span>
                             <span className="sm:hidden">...</span>
                         </span>
-                    ) : step === totalSteps ? 'Submit RSVP' : 'Next Step'}
+                    ) : step === totalSteps ? 'Submit RSVP' : 'Next'}
                 </button>
             </div>
         </div>

@@ -1,14 +1,15 @@
+
 // This is a simple server-side handler for form submissions
 // For deployment, you'll need to set up a backend service
 
 export async function sendFormEmail(formData: any) {
-  const gasWebAppUrl = 'https://script.google.com/macros/s/AKfycbzD4cIlyK2b7KsSUNr0OynAhruDoK26XL1LHPdyaFh9lmXtHk5dHraZxDpmEwhMqTovNQ/exec';
+  const gasWebAppUrl = 'https://script.google.com/macros/s/AKfycbwBp2OG8ps5VKO56_ATiERPs-_dVtr5AqQGMJhDqRnJgoAV72zo06hvWaKgHbWu1-qQ9A/exec';
   
   // Log submission started
   console.log('📝 FORM SUBMISSION STARTED');
   console.log('Timestamp:', new Date().toISOString());
   console.log('Guest Name:', formData.name);
-  console.log('Phone:', formData.phone);
+  console.log('Phone:', `${formData.countryCode} ${formData.phone}`);
   console.log('Attendees:', formData.attendees);
   console.log('---');
   console.log('Full Form Data:', formData);
@@ -45,11 +46,10 @@ export async function sendFormEmail(formData: any) {
     console.log('Data was captured, but transmission to server failed.');
     console.log('Guest Data:', {
       name: formData.name,
-      phone: formData.phone,
+      phone: `${formData.countryCode} ${formData.phone}`,
       attendees: formData.attendees,
       timestamp: new Date().toISOString()
     });
     return false;
   }
 }
-

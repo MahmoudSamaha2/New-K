@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import HeroVideo, { HeroVideoHandle } from './components/HeroVideo';
 import Wizard from './components/Wizard';
@@ -22,6 +23,7 @@ export default function App() {
     postWedding: '',
     returnPlan: '',
     name: '',
+    countryCode: '+20',
     phone: '',
     attendees: '1',
     notes: ''

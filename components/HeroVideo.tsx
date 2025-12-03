@@ -1,3 +1,4 @@
+
 import React, { useRef, useState, useImperativeHandle, forwardRef, useEffect } from 'react';
 
 interface HeroVideoProps {
@@ -13,8 +14,10 @@ export interface HeroVideoHandle {
 
 const HeroVideo = forwardRef<HeroVideoHandle, HeroVideoProps>(({ onComplete, onReady, className, src }, ref) => {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const hasEndedOnce = useRef<boolean>(false); // Track if we've handled the first end
   const [showHint, setShowHint] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [showSoundNote, setShowSoundNote] = useState(false);
   const [showUnmuteIcon, setShowUnmuteIcon] = useState(false);
   const touchStartY = useRef<number | null>(null);
 
@@ -24,13 +27,19 @@ const HeroVideo = forwardRef<HeroVideoHandle, HeroVideoProps>(({ onComplete, onR
     if (!video) return;
 
     // Set playing state based on video events
-    const handlePlay = () => setIsPlaying(true);
+    const handlePlay = () => {
+      setIsPlaying(true);
+      // Show sound note on play, but only if we haven't finished the first loop (where scroll hint takes over)
+      if (!hasEndedOnce.current) {
+        setShowSoundNote(true);
+      }
+    };
     const handlePause = () => setIsPlaying(false);
 
     video.addEventListener('play', handlePlay);
     video.addEventListener('pause', handlePause);
 
-    let readyTimeout: NodeJS.Timeout;
+    let readyTimeout: ReturnType<typeof setTimeout>;
 
     // Setup HLS support for cross-browser compatibility
     if (src.includes('.m3u8')) {
@@ -82,6 +91,16 @@ const HeroVideo = forwardRef<HeroVideoHandle, HeroVideoProps>(({ onComplete, onR
     };
   }, [src, onReady]);
 
+  // Auto-hide sound note after 3 seconds
+  useEffect(() => {
+    if (showSoundNote) {
+      const timer = setTimeout(() => {
+        setShowSoundNote(false);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [showSoundNote]);
+
   const handleManualPlay = async () => {
     if (videoRef.current) {
       videoRef.current.muted = false;
@@ -99,7 +118,15 @@ const HeroVideo = forwardRef<HeroVideoHandle, HeroVideoProps>(({ onComplete, onR
   }));
 
   const handleVideoEnded = () => {
+    // Show hint when video finishes the first time
     setShowHint(true);
+    hasEndedOnce.current = true;
+    
+    // Manually loop the video
+    if (videoRef.current) {
+      videoRef.current.currentTime = 0;
+      videoRef.current.play().catch(console.error);
+    }
   };
 
   const handleTouchStart = (e: React.TouchEvent) => {
@@ -130,7 +157,7 @@ const HeroVideo = forwardRef<HeroVideoHandle, HeroVideoProps>(({ onComplete, onR
         src={src}
         playsInline
         preload="auto"
-        loop
+        // Loop removed to allow onEnded to fire
         onEnded={handleVideoEnded}
       />
       
@@ -148,26 +175,31 @@ const HeroVideo = forwardRef<HeroVideoHandle, HeroVideoProps>(({ onComplete, onR
 
       {/* Manual Play Button (Only visible if not playing) */}
       {!isPlaying && (
-        <div className="absolute inset-0 flex items-center justify-center z-20 bg-black/40">
+        <div className="absolute inset-0 flex items-center justify-center z-20 bg-black/40 animate-fade-in">
           <button 
             onClick={handleManualPlay}
-            className="w-16 h-16 md:w-20 md:h-20 bg-white/10 backdrop-blur-md rounded-full flex items-center justify-center border border-white/30 hover:bg-white/20 transition-all transform hover:scale-110 active:scale-95 group"
+            className="group relative flex items-center justify-center w-20 h-20 md:w-24 md:h-24 rounded-full bg-black/20 backdrop-blur-md border border-gold-300/30 transition-all duration-500 hover:bg-black/40 hover:border-gold-300 hover:scale-105 active:scale-95 shadow-[0_0_30px_rgba(197,160,89,0.15)]"
             title="Play video"
           >
-             <svg className="w-6 h-6 md:w-8 md:h-8 text-white ml-1 group-hover:text-gold-200 transition-colors" fill="currentColor" viewBox="0 0 24 24">
+             {/* Animated Ring */}
+             <div className="absolute inset-0 rounded-full border border-gold-100/20 scale-100 group-hover:scale-110 transition-transform duration-700 ease-out" />
+             
+             {/* Icon */}
+             <svg className="w-8 h-8 md:w-10 md:h-10 text-gold-200 ml-1 group-hover:text-gold-100 transition-colors drop-shadow-lg" fill="currentColor" viewBox="0 0 24 24">
                <path d="M8 5v14l11-7z" />
              </svg>
           </button>
         </div>
       )}
 
-      {/* Skip Video Button (Testing Only - Remove Before Deployment) */}
-      <button
-        onClick={onComplete}
-        className="absolute top-3 md:top-6 right-3 md:right-6 z-30 px-3 md:px-4 py-1 md:py-2 bg-red-500/80 hover:bg-red-600 text-white text-xs md:text-sm font-semibold rounded-lg transition-colors backdrop-blur-sm border border-red-400/50"
+      {/* Better with sound Note (Visible on play, hidden after 3s or when finished) */}
+      <div 
+        className={`absolute bottom-20 md:bottom-24 left-0 w-full text-center transition-opacity duration-1000 ${showSoundNote && !showHint ? 'opacity-100' : 'opacity-0'}`}
       >
-        Skip Video
-      </button>
+         <p className="text-gold-300 text-xs md:text-sm font-serif italic tracking-widest opacity-80 mix-blend-screen drop-shadow-lg">
+           Better with sound
+         </p>
+      </div>
 
       {/* Swipe Hint */}
       <div 
