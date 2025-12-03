@@ -30,7 +30,7 @@ const HeroVideo = forwardRef<HeroVideoHandle, HeroVideoProps>(({ onComplete, onR
     video.addEventListener('play', handlePlay);
     video.addEventListener('pause', handlePause);
 
-    let readyTimeout: ReturnType<typeof setTimeout>;
+    let readyTimeout: NodeJS.Timeout;
 
     // Setup HLS support for cross-browser compatibility
     if (src.includes('.m3u8')) {
@@ -129,8 +129,6 @@ const HeroVideo = forwardRef<HeroVideoHandle, HeroVideoProps>(({ onComplete, onR
         className="w-full h-full object-cover"
         src={src}
         playsInline
-        muted // Critical for autoplay
-        autoPlay // Try to autoplay
         preload="auto"
         loop
         onEnded={handleVideoEnded}

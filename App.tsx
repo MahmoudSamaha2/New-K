@@ -7,8 +7,8 @@ import { ViewState, FormData } from './types';
 import { sendFormEmail } from './utils/emailService';
 
 const ASSETS = {
-  video: 'https://internal-comm.com/assets/video/Kholi-wedding-inv-vid.m3u8',
-  images: Array.from({ length: 7 }, (_, i) => `https://internal-comm.com/assets/bg${i + 1}.jpg`)
+  video: 'https://soussyandkae.com/assets/video/Kholi-wedding-inv-vid.m3u8',
+  images: Array.from({ length: 7 }, (_, i) => `http://soussyandkae.com/assets/bg${i + 1}.jpg`)
 };
 
 export default function App() {
