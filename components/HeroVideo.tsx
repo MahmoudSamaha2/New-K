@@ -122,11 +122,7 @@ const HeroVideo = forwardRef<HeroVideoHandle, HeroVideoProps>(({ onComplete, onR
     setShowHint(true);
     hasEndedOnce.current = true;
     
-    // Manually loop the video
-    if (videoRef.current) {
-      videoRef.current.currentTime = 0;
-      videoRef.current.play().catch(console.error);
-    }
+    // Video stops automatically at the end. We do not restart it.
   };
 
   const handleTouchStart = (e: React.TouchEvent) => {
@@ -134,6 +130,9 @@ const HeroVideo = forwardRef<HeroVideoHandle, HeroVideoProps>(({ onComplete, onR
   };
 
   const handleTouchEnd = (e: React.TouchEvent) => {
+    // Prevent interaction until video has finished (hint is shown)
+    if (!showHint) return;
+
     if (touchStartY.current === null) return;
     const touchEndY = e.changedTouches[0].clientY;
     const diff = touchStartY.current - touchEndY;
@@ -173,8 +172,8 @@ const HeroVideo = forwardRef<HeroVideoHandle, HeroVideoProps>(({ onComplete, onR
         </div>
       )}
 
-      {/* Manual Play Button (Only visible if not playing) */}
-      {!isPlaying && (
+      {/* Manual Play Button (Only visible if not playing AND video hasn't finished yet) */}
+      {!isPlaying && !hasEndedOnce.current && (
         <div className="absolute inset-0 flex items-center justify-center z-20 bg-black/40 animate-fade-in">
           <button 
             onClick={handleManualPlay}
@@ -192,14 +191,7 @@ const HeroVideo = forwardRef<HeroVideoHandle, HeroVideoProps>(({ onComplete, onR
         </div>
       )}
 
-      {/* Better with sound Note (Visible on play, hidden after 3s or when finished) */}
-      <div 
-        className={`absolute bottom-20 md:bottom-24 left-0 w-full text-center transition-opacity duration-1000 ${showSoundNote && !showHint ? 'opacity-100' : 'opacity-0'}`}
-      >
-         <p className="text-gold-300 text-xs md:text-sm font-serif italic tracking-widest opacity-80 mix-blend-screen drop-shadow-lg">
-           Better with sound
-         </p>
-      </div>
+   
 
       {/* Swipe Hint */}
       <div 
@@ -216,3 +208,4 @@ const HeroVideo = forwardRef<HeroVideoHandle, HeroVideoProps>(({ onComplete, onR
 });
 
 export default HeroVideo;
+    
