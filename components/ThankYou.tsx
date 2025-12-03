@@ -8,7 +8,6 @@ const ThankYou = () => {
       
       {/* Content */}
       <div className="absolute inset-0 flex flex-col items-center justify-center p-4 md:p-8 text-center animate-fade-in z-10">
-         <div className="mb-6 md:mb-8 text-4xl md:text-5xl animate-bounce-slow">🕊️</div>
          
          <div className="space-y-1 md:space-y-2 mb-6 md:mb-8">
             <h2 className="font-cinzel text-3xl md:text-5xl text-gold-200 line-clamp-2">Thank You</h2>
