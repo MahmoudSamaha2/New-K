@@ -140,11 +140,8 @@ const Wizard: React.FC<WizardProps> = ({ initialData, onComplete, onBack }) => {
     // Check logical step for conditional logic
     if (currentLogicalStep === 5) {
        // Conditional Logic: If "No" on Post Wedding, skip Return Plan (Logical 6)
-       // In STEP_ORDER [0, 3, 4, 1, 2, 5, 6, 7], Logical 5 is at index 5.
-       // Logical 6 is at index 6. Logical 7 is at index 7.
-       // So we want to skip to index 7.
        if (formData.postWedding.startsWith("No")) {
-         setStep(7);
+         setStep(7); // Skip to Contact (which is at index 7)
          return;
        }
     }
@@ -288,9 +285,9 @@ const Wizard: React.FC<WizardProps> = ({ initialData, onComplete, onBack }) => {
              return (
                 <StepLayout 
                    stepNumber="01"
-                   date="Getting There"
+                   date=""
                    subtitle=" "
-                   title=" "
+                   title="Getting There"
                    description="We’re organizing group travel — so you don’t miss the laughter on the way or the stories en route."
                    question="How would you like to travel to Aswan?"
                 >
@@ -310,9 +307,9 @@ const Wizard: React.FC<WizardProps> = ({ initialData, onComplete, onBack }) => {
              return (
                 <StepLayout 
                    stepNumber="02"
-                   date="Staying Together"
+                   date=""
                    subtitle=""
-                   title=" "
+                   title="Staying Together"
                    description="One roof. One vibe. One long sleepover."
                    question="We’re booking a hotel for everyone to stay together. Want to be part of it?"
                 >
@@ -354,9 +351,9 @@ const Wizard: React.FC<WizardProps> = ({ initialData, onComplete, onBack }) => {
              return (
                 <StepLayout 
                    stepNumber="06"
-                   date="The Journey Home"
+                   date=""
                    subtitle=" "
-                   title=" "
+                   title="The Journey Home"
                    description="If you're joining the post-wedding trip:"
                    question="How would you like to return?"
                 >
@@ -374,23 +371,50 @@ const Wizard: React.FC<WizardProps> = ({ initialData, onComplete, onBack }) => {
             );
         case 7: // Contact (Sequence 7 -> Final)
             return (
-                 <div className="h-full flex flex-col justify-center animate-fade-in pb-8">
+                 <div className="h-full flex flex-col justify-center animate-fade-in pb-8 pt-12">
                     <div className="bg-stone-900/90 backdrop-blur-xl border border-white/10 p-5 md:p-6 rounded-2xl shadow-2xl mx-4 md:mx-0">
                         <div className="text-gold-300 text-xs font-serif uppercase tracking-widest mb-2">Final Step</div>
                         <h3 className="text-2xl md:text-3xl font-cinzel text-white mb-2">Contact Details</h3>
                         <p className="text-stone-300 text-xs md:text-sm leading-relaxed mb-4 md:mb-6">Just so we can stay connected.</p>
                         
                         <div className="space-y-3 md:space-y-4">
-                             <div className="space-y-1">
-                                <label className="text-xs text-stone-400 uppercase tracking-wider pl-1">Name</label>
-                                <input 
-                                    type="text" 
-                                    placeholder="Your full name"
-                                    value={formData.name}
-                                    onChange={(e) => handleInputChange('name', e.target.value)}
-                                    className="w-full bg-stone-900/50 border border-stone-600 rounded-lg p-3 text-sm md:text-base text-white placeholder-stone-600 focus:outline-none focus:border-gold-300 transition-colors"
-                                />
+                             {/* Name and Attendees Row */}
+                             <div className="flex gap-3">
+                                 <div className="space-y-1 flex-1">
+                                    <label className="text-xs text-stone-400 uppercase tracking-wider pl-1">Name</label>
+                                    <input 
+                                        type="text" 
+                                        placeholder="Your full name"
+                                        value={formData.name}
+                                        onChange={(e) => handleInputChange('name', e.target.value)}
+                                        className="w-full bg-stone-900/50 border border-stone-600 rounded-lg p-3 text-sm md:text-base text-white placeholder-stone-600 focus:outline-none focus:border-gold-300 transition-colors"
+                                    />
+                                 </div>
+                                 <div className="space-y-1 w-24 flex-shrink-0">
+                                    <label className="text-xs text-stone-400 uppercase tracking-wider pl-1 truncate">Attendees</label>
+                                    <input 
+                                        type="number" 
+                                        min="1"
+                                        max="10"
+                                        value={formData.attendees}
+                                        onChange={(e) => {
+                                            const val = e.target.value;
+                                            if (val === '') {
+                                                handleInputChange('attendees', '');
+                                                return;
+                                            }
+                                            const num = parseInt(val, 10);
+                                            if (!isNaN(num)) {
+                                                if (num < 1) handleInputChange('attendees', '1');
+                                                else if (num > 10) handleInputChange('attendees', '10');
+                                                else handleInputChange('attendees', val);
+                                            }
+                                        }}
+                                        className="w-full bg-stone-900/50 border border-stone-600 rounded-lg p-3 text-sm md:text-base text-white placeholder-stone-600 focus:outline-none focus:border-gold-300 transition-colors text-center"
+                                    />
+                                 </div>
                              </div>
+
                              <div className="space-y-1">
                                 <label className="text-xs text-stone-400 uppercase tracking-wider pl-1">Phone</label>
                                 <div className="flex gap-2">
@@ -428,29 +452,7 @@ const Wizard: React.FC<WizardProps> = ({ initialData, onComplete, onBack }) => {
                                     />
                                 </div>
                              </div>
-                             <div className="space-y-1">
-                                <label className="text-xs text-stone-400 uppercase tracking-wider pl-1">Total Attendees</label>
-                                <input 
-                                    type="number" 
-                                    min="1"
-                                    max="10"
-                                    value={formData.attendees}
-                                    onChange={(e) => {
-                                        const val = e.target.value;
-                                        if (val === '') {
-                                            handleInputChange('attendees', '');
-                                            return;
-                                        }
-                                        const num = parseInt(val, 10);
-                                        if (!isNaN(num)) {
-                                            if (num < 1) handleInputChange('attendees', '1');
-                                            else if (num > 10) handleInputChange('attendees', '10');
-                                            else handleInputChange('attendees', val);
-                                        }
-                                    }}
-                                    className="w-full bg-stone-900/50 border border-stone-600 rounded-lg p-3 text-sm md:text-base text-white placeholder-stone-600 focus:outline-none focus:border-gold-300 transition-colors"
-                                />
-                             </div>
+                             
                              <div className="space-y-1">
                                 <label className="text-xs text-stone-400 uppercase tracking-wider pl-1">Optional Notes</label>
                                 <textarea 
@@ -465,10 +467,10 @@ const Wizard: React.FC<WizardProps> = ({ initialData, onComplete, onBack }) => {
                         
                         <div className="mt-6 pt-4 border-t border-white/10 text-center">
                             <p className="text-sm text-stone-300 font-serif italic mb-2">
-                                Our lovely friend Nourhan will be in touch to confirm the details and help with any arrangements you might need.
+                                Our lovely friend Nourhan will be in touch to confirm the details and help with any arrangements you might need. You can also reach her at:
                             </p>
                             <div className="inline-flex items-center gap-2 bg-black/30 px-4 py-2 rounded-full border border-white/5 mt-1">
-                                <span className="text-[10px] text-stone-500 uppercase tracking-widest">You can also reach her at:</span>
+                                <span className="text-[10px] text-stone-500 uppercase tracking-widest"></span>
                                 <a href="tel:+201220105839" className="text-gold-300 font-sans font-bold hover:text-gold-200 transition-colors">
                                     +20 122 0105839
                                 </a>
@@ -476,7 +478,7 @@ const Wizard: React.FC<WizardProps> = ({ initialData, onComplete, onBack }) => {
                         </div>
                     </div>
                 </div>
-            )
+            );
     }
   }
 

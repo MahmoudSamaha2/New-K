@@ -133,16 +133,7 @@ const HeroVideo = forwardRef<HeroVideoHandle, HeroVideoProps>(({ onComplete, onR
       {/* Overlay Gradient */}
       <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-black/20 pointer-events-none" />
 
-      {/* Skip Button (Testing) */}
-      <button 
-        onClick={(e) => {
-          e.stopPropagation();
-          onComplete();
-        }}
-        className="absolute top-6 right-6 z-50 px-4 py-2 bg-black/40 backdrop-blur-md border border-white/10 rounded-full text-white/50 hover:text-white text-[10px] uppercase tracking-widest transition-colors"
-      >
-        Skip Video
-      </button>
+     
 
       {/* Manual Play Button (Only visible if not playing AND video hasn't finished yet) */}
       {!isPlaying && !hasEndedOnce.current && (
