@@ -72,6 +72,9 @@ const HeroVideo = forwardRef<HeroVideoHandle, HeroVideoProps>(({ onComplete, onR
     };
   }, [src, onReady]);
 
+
+ 
+
   // Auto-hide sound note after 3 seconds
   useEffect(() => {
     if (showSoundNote) {

@@ -25,7 +25,7 @@ const StepLayout: React.FC<StepLayoutProps> = ({
 }) => {
     return (
         <div className="h-full flex flex-col justify-end animate-fade-in pb-2">
-            <div className="bg-stone-900/80 backdrop-blur-xl border border-white/10 p-5 md:p-6 rounded-2xl shadow-2xl mx-4 md:mx-0">
+            <div className="bg-stone-900/60 backdrop-blur-l border border-white/10 p-5 md:p-6 rounded-2xl shadow-2xl mx-4 md:mx-0">
                  {/* Header Section */}
                  <div className="mb-5 pb-5 border-b border-white/10">
                     <div className="flex justify-between items-start mb-2">
@@ -203,7 +203,7 @@ const Wizard: React.FC<WizardProps> = ({ initialData, onComplete, onBack }) => {
         case 0: // Intro
             return (
                 <div className="h-full flex flex-col justify-center animate-fade-in pb-8">
-                    <div className="bg-stone-900/90 backdrop-blur-xl border border-white/10 p-6 rounded-2xl shadow-2xl mx-4 md:mx-0">
+                    <div className="bg-stone-900/60 backdrop-blur-l border border-white/10 p-6 rounded-2xl shadow-2xl mx-4 md:mx-0">
                         {/* Header Section */}
                         <div className="mb-6 pb-4 border-b border-white/10 text-center">
                             <p className="text-stone-400 text-xs uppercase tracking-widest font-cinzel mb-2">Welcome</p>
@@ -372,7 +372,7 @@ const Wizard: React.FC<WizardProps> = ({ initialData, onComplete, onBack }) => {
         case 7: // Contact (Sequence 7 -> Final)
             return (
                  <div className="h-full flex flex-col justify-center animate-fade-in pb-8 pt-12">
-                    <div className="bg-stone-900/90 backdrop-blur-xl border border-white/10 p-5 md:p-6 rounded-2xl shadow-2xl mx-4 md:mx-0">
+                    <div className="bg-stone-900/60 backdrop-blur-l border border-white/10 p-5 md:p-6 rounded-2xl shadow-2xl mx-4 md:mx-0">
                         <div className="text-gold-300 text-xs font-serif uppercase tracking-widest mb-2">Final Step</div>
                         <h3 className="text-2xl md:text-3xl font-cinzel text-white mb-2">Contact Details</h3>
                         <p className="text-stone-300 text-xs md:text-sm leading-relaxed mb-4 md:mb-6">Just so we can stay connected.</p>
@@ -457,7 +457,7 @@ const Wizard: React.FC<WizardProps> = ({ initialData, onComplete, onBack }) => {
                         
                         <div className="mt-6 pt-4 border-t border-white/10 text-center">
                             <p className="text-sm text-stone-300 font-serif italic mb-2">
-                                Our lovely friend Nourhan will be in touch to confirm the details and help with any arrangements you might need. You can also reach her at:
+                                Our lovely friend<span className="text-gold-300"> Nourhan</span> will be in touch to confirm the details and help with any arrangements you might need. You can also reach her at:
                             </p>
                             <div className="inline-flex items-center gap-2 bg-black/30 px-4 py-2 rounded-full border border-white/5 mt-1">
                                 <span className="text-[10px] text-stone-500 uppercase tracking-widest"></span>
