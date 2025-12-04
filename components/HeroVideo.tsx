@@ -1,4 +1,3 @@
-
 import React, { useRef, useState, useImperativeHandle, forwardRef, useEffect } from 'react';
 
 interface HeroVideoProps {
@@ -6,155 +5,50 @@ interface HeroVideoProps {
   onReady?: () => void;
   className?: string;
   src: string;
-  posterSrc?: string;
 }
 
 export interface HeroVideoHandle {
   play: () => Promise<void>;
 }
 
-const FALLBACK_SRC = 'https://www.internal-comm.com/assets/wedding-video.mp4';
-
-const HeroVideo = forwardRef<HeroVideoHandle, HeroVideoProps>(({ onComplete, onReady, className, src, posterSrc }, ref) => {
+const HeroVideo = forwardRef<HeroVideoHandle, HeroVideoProps>(({ onComplete, onReady, className, src }, ref) => {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const hasEndedOnce = useRef<boolean>(false); // Track if we've handled the first end
+  const hasEndedOnce = useRef<boolean>(false);
   const [showHint, setShowHint] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [showSoundNote, setShowSoundNote] = useState(false);
-  const [showUnmuteIcon, setShowUnmuteIcon] = useState(false);
   const touchStartY = useRef<number | null>(null);
-  const fallbackTriggered = useRef(false);
 
-  // Setup video on mount
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
 
-    // Set playing state based on video events
-    const handlePlay = () => {
-      setIsPlaying(true);
-      // Show sound note on play, but only if we haven't finished the first loop (where scroll hint takes over)
-      if (!hasEndedOnce.current) {
-        setShowSoundNote(true);
-      }
-    };
-    const handlePause = () => setIsPlaying(false);
-    
-    // Generic error handler for the video element (catches native errors)
-    const handleError = (e: Event) => {
-        console.error('🎥 Video element error:', video.error);
-        if (src.includes('.m3u8') && !fallbackTriggered.current) {
-            attemptFallback();
-        }
+    console.log("🎥 Setting video source to MP4:", src);
+    video.src = src;
+    video.load(); // Explicit load call helps some browsers start fetching immediately
+
+    const handleCanPlay = () => {
+         console.log("🎥 Video event: canplay - Ready to start");
+         onReady?.();
     };
 
+    const handlePlay = () => {
+      setIsPlaying(true);
+      if (!hasEndedOnce.current) setShowSoundNote(true);
+    };
+    const handlePause = () => setIsPlaying(false);
+    const handleError = () => console.error("Video Error:", video.error);
+
+    video.addEventListener('canplay', handleCanPlay);
     video.addEventListener('play', handlePlay);
     video.addEventListener('pause', handlePause);
     video.addEventListener('error', handleError);
 
-    // GUARD: If we have already triggered fallback, do NOT attempt to load source again.
-    // This prevents re-initialization loops if the parent component re-renders.
-    if (fallbackTriggered.current) {
-        return () => {
-            video.removeEventListener('play', handlePlay);
-            video.removeEventListener('pause', handlePause);
-            video.removeEventListener('error', handleError);
-        };
-    }
-
-    // Helper to switch to fallback
-    const attemptFallback = () => {
-        if (fallbackTriggered.current) return;
-        console.warn('⚠️ HLS playback failed or not supported. Switching to fallback MP4.');
-        fallbackTriggered.current = true;
-        
-        // Clean up any existing HLS instance if this was called from error handler
-        if (hls) {
-            try {
-                hls.destroy();
-            } catch (e) {
-                console.warn('Error destroying HLS instance during fallback', e);
-            }
-        }
-
-        video.src = FALLBACK_SRC;
-        video.load();
-        
-        // Ensure onReady is triggered for the fallback
-        const onFallbackReady = () => {
-             console.log('🎥 Fallback video ready');
-             onReady?.();
-             video.removeEventListener('canplay', onFallbackReady);
-        };
-        video.addEventListener('canplay', onFallbackReady);
-    };
-
-    let readyTimeout: ReturnType<typeof setTimeout>;
-    let hls: any = null;
-
-    // Setup HLS support for cross-browser compatibility
-    if (src.includes('.m3u8')) {
-      if (video.canPlayType('application/vnd.apple.mpegurl')) {
-        // Safari supports HLS natively
-        console.log('🎥 Using native HLS support (Safari)');
-        video.src = src;
-        onReady?.();
-      } else if ((window as any).Hls && (window as any).Hls.isSupported()) {
-        // Use HLS.js for other browsers
-        // Configure for adaptive quality - prioritizes playback smoothness
-        const hlsConfig = {
-            capLevelToPlayerSize: true, // Improves performance by not loading 4k on mobile
-            startLevel: -1, // Auto start level (adaptive)
-            autoStartLoad: true
-        };
-        
-        console.log('🎥 Using HLS.js library for HLS support with adaptive quality');
-        hls = new (window as any).Hls(hlsConfig);
-        hls.loadSource(src);
-        hls.attachMedia(video);
-        
-        // Timeout fallback if manifest doesn't load
-        readyTimeout = setTimeout(() => {
-          if (!fallbackTriggered.current && video.readyState < 3) {
-             console.log('🎥 HLS load timeout, attempting fallback...');
-             // We don't necessarily want to fallback on timeout alone if it's just slow, 
-             // but if it's stuck, the fallback might be faster.
-             // For now, let's just trigger onReady to unblock UI, or we could fallback.
-             console.log('🎥 Video ready (timeout fallback)');
-             onReady?.();
-          }
-        }, 3000);
-        
-        hls.on((window as any).Hls.Events.MANIFEST_PARSED, () => {
-          console.log('🎥 HLS manifest loaded successfully');
-          clearTimeout(readyTimeout);
-          onReady?.();
-        });
-        
-        hls.on((window as any).Hls.Events.ERROR, (event: any, data: any) => {
-          if (data.fatal) {
-            console.error('🎥 HLS fatal error:', data);
-            hls.destroy();
-            clearTimeout(readyTimeout);
-            attemptFallback();
-          }
-        });
-      } else {
-        console.error('🎥 HLS support not available in this browser');
-        // No HLS support at all -> Go straight to fallback
-        attemptFallback();
-      }
-    } else {
-      video.src = src;
-      onReady?.();
-    }
-
     return () => {
-      video.removeEventListener('play', handlePlay);
-      video.removeEventListener('pause', handlePause);
-      video.removeEventListener('error', handleError);
-      clearTimeout(readyTimeout);
-      if (hls) hls.destroy();
+        video.removeEventListener('canplay', handleCanPlay);
+        video.removeEventListener('play', handlePlay);
+        video.removeEventListener('pause', handlePause);
+        video.removeEventListener('error', handleError);
     };
   }, [src, onReady]);
 
@@ -170,13 +64,16 @@ const HeroVideo = forwardRef<HeroVideoHandle, HeroVideoProps>(({ onComplete, onR
 
   const handleManualPlay = async () => {
     if (videoRef.current) {
-      videoRef.current.muted = false;
-      await videoRef.current.play().catch(() => {
-        console.error("Manual play failed");
-      });
-      setIsPlaying(true);
+        videoRef.current.muted = false;
+        try {
+            await videoRef.current.play();
+            setIsPlaying(true);
+        } catch (e) {
+            console.error("Manual play failed", e);
+            // No fallback logic needed now as src is the fallback
+        }
     }
-  };
+};
 
   useImperativeHandle(ref, () => ({
     play: async () => {
@@ -188,8 +85,6 @@ const HeroVideo = forwardRef<HeroVideoHandle, HeroVideoProps>(({ onComplete, onR
     // Show hint when video finishes the first time
     setShowHint(true);
     hasEndedOnce.current = true;
-    
-    // Video stops automatically at the end. We do not restart it.
   };
 
   const handleTouchStart = (e: React.TouchEvent) => {
@@ -221,23 +116,23 @@ const HeroVideo = forwardRef<HeroVideoHandle, HeroVideoProps>(({ onComplete, onR
         ref={videoRef}
         className="w-full h-full object-cover"
         playsInline
-        preload="metadata"
-        poster={posterSrc}
-        // Loop removed to allow onEnded to fire
+        preload="auto"
         onEnded={handleVideoEnded}
       />
       
       {/* Overlay Gradient */}
       <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-black/20 pointer-events-none" />
 
-      {/*Unmute Icon (flashes if sound is muted) */}
-      {showUnmuteIcon && (
-        <div className="absolute top-6 left-6 z-30 animate-pulse">
-          <svg className="w-6 h-6 text-gold-300" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.26 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z" />
-          </svg>
-        </div>
-      )}
+      {/* Skip Button (Testing) */}
+      <button 
+        onClick={(e) => {
+          e.stopPropagation();
+          onComplete();
+        }}
+        className="absolute top-6 right-6 z-50 px-4 py-2 bg-black/40 backdrop-blur-md border border-white/10 rounded-full text-white/50 hover:text-white text-[10px] uppercase tracking-widest transition-colors"
+      >
+        Skip Video
+      </button>
 
       {/* Manual Play Button (Only visible if not playing AND video hasn't finished yet) */}
       {!isPlaying && !hasEndedOnce.current && (
