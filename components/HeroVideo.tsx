@@ -6,6 +6,7 @@ interface HeroVideoProps {
   onReady?: () => void;
   className?: string;
   src: string;
+  posterSrc?: string;
 }
 
 export interface HeroVideoHandle {
@@ -14,7 +15,7 @@ export interface HeroVideoHandle {
 
 const FALLBACK_SRC = 'https://www.internal-comm.com/assets/wedding-video.mp4';
 
-const HeroVideo = forwardRef<HeroVideoHandle, HeroVideoProps>(({ onComplete, onReady, className, src }, ref) => {
+const HeroVideo = forwardRef<HeroVideoHandle, HeroVideoProps>(({ onComplete, onReady, className, src, posterSrc }, ref) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const hasEndedOnce = useRef<boolean>(false); // Track if we've handled the first end
   const [showHint, setShowHint] = useState(false);
@@ -220,7 +221,8 @@ const HeroVideo = forwardRef<HeroVideoHandle, HeroVideoProps>(({ onComplete, onR
         ref={videoRef}
         className="w-full h-full object-cover"
         playsInline
-        preload="auto"
+        preload="metadata"
+        poster={posterSrc}
         // Loop removed to allow onEnded to fire
         onEnded={handleVideoEnded}
       />
