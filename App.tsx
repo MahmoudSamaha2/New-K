@@ -1,5 +1,5 @@
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import HeroVideo, { HeroVideoHandle } from './components/HeroVideo';
 import Wizard from './components/Wizard';
 import ThankYou from './components/ThankYou';
@@ -40,7 +40,7 @@ export default function App() {
     });
   }, []);
 
-  const handleVideoReady = () => {
+  const handleVideoReady = useCallback(() => {
     // Ensure loader shows for at least 2 seconds
     const elapsedTime = Date.now() - loaderStartTime.current;
     const remainingTime = Math.max(2000 - elapsedTime, 0);
@@ -48,14 +48,14 @@ export default function App() {
     setTimeout(() => {
       setShowLoader(false);
     }, remainingTime);
-  };
+  }, []);
 
-  const handleVideoComplete = () => {
+  const handleVideoComplete = useCallback(() => {
     console.log('🎥 VIDEO COMPLETED');
     console.log('Timestamp:', new Date().toISOString());
     console.log('Transitioning to RSVP form...');
     setView('wizard');
-  };
+  }, []);
 
   const handleWizardComplete = async (finalData: FormData) => {
     setFormData(finalData);

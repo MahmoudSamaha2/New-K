@@ -29,24 +29,6 @@ const HeroVideo = forwardRef<HeroVideoHandle, HeroVideoProps>(({ onComplete, onR
     const video = videoRef.current;
     if (!video) return;
 
-    // Helper to switch to fallback
-    const attemptFallback = () => {
-        if (fallbackTriggered.current) return;
-        console.warn('⚠️ HLS playback failed or not supported. Switching to fallback MP4.');
-        fallbackTriggered.current = true;
-        
-        video.src = FALLBACK_SRC;
-        video.load();
-        
-        // Ensure onReady is triggered for the fallback
-        const onFallbackReady = () => {
-             console.log('🎥 Fallback video ready');
-             onReady?.();
-             video.removeEventListener('canplay', onFallbackReady);
-        };
-        video.addEventListener('canplay', onFallbackReady);
-    };
-
     // Set playing state based on video events
     const handlePlay = () => {
       setIsPlaying(true);
@@ -69,7 +51,45 @@ const HeroVideo = forwardRef<HeroVideoHandle, HeroVideoProps>(({ onComplete, onR
     video.addEventListener('pause', handlePause);
     video.addEventListener('error', handleError);
 
+    // GUARD: If we have already triggered fallback, do NOT attempt to load source again.
+    // This prevents re-initialization loops if the parent component re-renders.
+    if (fallbackTriggered.current) {
+        return () => {
+            video.removeEventListener('play', handlePlay);
+            video.removeEventListener('pause', handlePause);
+            video.removeEventListener('error', handleError);
+        };
+    }
+
+    // Helper to switch to fallback
+    const attemptFallback = () => {
+        if (fallbackTriggered.current) return;
+        console.warn('⚠️ HLS playback failed or not supported. Switching to fallback MP4.');
+        fallbackTriggered.current = true;
+        
+        // Clean up any existing HLS instance if this was called from error handler
+        if (hls) {
+            try {
+                hls.destroy();
+            } catch (e) {
+                console.warn('Error destroying HLS instance during fallback', e);
+            }
+        }
+
+        video.src = FALLBACK_SRC;
+        video.load();
+        
+        // Ensure onReady is triggered for the fallback
+        const onFallbackReady = () => {
+             console.log('🎥 Fallback video ready');
+             onReady?.();
+             video.removeEventListener('canplay', onFallbackReady);
+        };
+        video.addEventListener('canplay', onFallbackReady);
+    };
+
     let readyTimeout: ReturnType<typeof setTimeout>;
+    let hls: any = null;
 
     // Setup HLS support for cross-browser compatibility
     if (src.includes('.m3u8')) {
@@ -88,7 +108,7 @@ const HeroVideo = forwardRef<HeroVideoHandle, HeroVideoProps>(({ onComplete, onR
         };
         
         console.log('🎥 Using HLS.js library for HLS support with adaptive quality');
-        const hls = new (window as any).Hls(hlsConfig);
+        hls = new (window as any).Hls(hlsConfig);
         hls.loadSource(src);
         hls.attachMedia(video);
         
@@ -99,8 +119,6 @@ const HeroVideo = forwardRef<HeroVideoHandle, HeroVideoProps>(({ onComplete, onR
              // We don't necessarily want to fallback on timeout alone if it's just slow, 
              // but if it's stuck, the fallback might be faster.
              // For now, let's just trigger onReady to unblock UI, or we could fallback.
-             // Let's stick to existing logic of unblocking UI, but if it fails to play, 
-             // the error handler will catch it.
              console.log('🎥 Video ready (timeout fallback)');
              onReady?.();
           }
@@ -135,6 +153,7 @@ const HeroVideo = forwardRef<HeroVideoHandle, HeroVideoProps>(({ onComplete, onR
       video.removeEventListener('pause', handlePause);
       video.removeEventListener('error', handleError);
       clearTimeout(readyTimeout);
+      if (hls) hls.destroy();
     };
   }, [src, onReady]);
 
