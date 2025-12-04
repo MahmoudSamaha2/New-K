@@ -453,16 +453,6 @@ const Wizard: React.FC<WizardProps> = ({ initialData, onComplete, onBack }) => {
                                 </div>
                              </div>
                              
-                             <div className="space-y-1">
-                                <label className="text-xs text-stone-400 uppercase tracking-wider pl-1">Optional Notes</label>
-                                <textarea 
-                                    placeholder="Anything else we should know?"
-                                    value={formData.notes}
-                                    onChange={(e) => handleInputChange('notes', e.target.value)}
-                                    rows={2}
-                                    className="w-full bg-stone-900/50 border border-stone-600 rounded-lg p-3 text-sm md:text-base text-white placeholder-stone-600 focus:outline-none focus:border-gold-300 transition-colors resize-none"
-                                />
-                             </div>
                         </div>
                         
                         <div className="mt-6 pt-4 border-t border-white/10 text-center">

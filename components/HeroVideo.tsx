@@ -17,6 +17,7 @@ const HeroVideo = forwardRef<HeroVideoHandle, HeroVideoProps>(({ onComplete, onR
   const [showHint, setShowHint] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [showSoundNote, setShowSoundNote] = useState(false);
+  const [isBuffering, setIsBuffering] = useState(false);
   const touchStartY = useRef<number | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -30,11 +31,18 @@ const HeroVideo = forwardRef<HeroVideoHandle, HeroVideoProps>(({ onComplete, onR
 
     const handleCanPlay = () => {
          console.log("🎥 Video event: canplay - Ready to start");
+         setIsBuffering(false);
          onReady?.();
+    };
+
+    const handleWaiting = () => {
+        console.log("⏳ Video buffering...");
+        setIsBuffering(true);
     };
 
     const handlePlay = () => {
       setIsPlaying(true);
+      setIsBuffering(false);
       if (!hasEndedOnce.current) setShowSoundNote(true);
 
       // Enable scroll up after 45 seconds of playback
@@ -49,12 +57,14 @@ const HeroVideo = forwardRef<HeroVideoHandle, HeroVideoProps>(({ onComplete, onR
     const handleError = () => console.error("Video Error:", video.error);
 
     video.addEventListener('canplay', handleCanPlay);
+    video.addEventListener('waiting', handleWaiting);
     video.addEventListener('play', handlePlay);
     video.addEventListener('pause', handlePause);
     video.addEventListener('error', handleError);
 
     return () => {
         video.removeEventListener('canplay', handleCanPlay);
+        video.removeEventListener('waiting', handleWaiting);
         video.removeEventListener('play', handlePlay);
         video.removeEventListener('pause', handlePause);
         video.removeEventListener('error', handleError);
@@ -133,10 +143,17 @@ const HeroVideo = forwardRef<HeroVideoHandle, HeroVideoProps>(({ onComplete, onR
       {/* Overlay Gradient */}
       <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-black/20 pointer-events-none" />
 
-     
+      {/* Buffering Indicator */}
+      {isBuffering && (
+        <div className="absolute inset-0 flex items-center justify-center z-30 pointer-events-none animate-fade-in">
+             <div className="relative">
+                <div className="w-16 h-16 border-4 border-white/10 border-t-gold-300 rounded-full animate-spin"></div>
+             </div>
+        </div>
+      )}
 
       {/* Manual Play Button (Only visible if not playing AND video hasn't finished yet) */}
-      {!isPlaying && !hasEndedOnce.current && (
+      {!isPlaying && !hasEndedOnce.current && !isBuffering && (
         <div className="absolute inset-0 flex items-center justify-center z-20 bg-black/40 animate-fade-in">
           <button 
             onClick={handleManualPlay}
