@@ -50,8 +50,15 @@ const HeroVideo = forwardRef<HeroVideoHandle, HeroVideoProps>(({ onComplete, onR
         onReady?.();
       } else if ((window as any).Hls && (window as any).Hls.isSupported()) {
         // Use HLS.js for other browsers
-        console.log('🎥 Using HLS.js library for HLS support');
-        const hls = new (window as any).Hls();
+        // Configure for adaptive quality - prioritizes playback smoothness
+        const hlsConfig = {
+            capLevelToPlayerSize: true, // Improves performance by not loading 4k on mobile
+            startLevel: -1, // Auto start level (adaptive)
+            autoStartLoad: true
+        };
+        
+        console.log('🎥 Using HLS.js library for HLS support with adaptive quality');
+        const hls = new (window as any).Hls(hlsConfig);
         hls.loadSource(src);
         hls.attachMedia(video);
         
