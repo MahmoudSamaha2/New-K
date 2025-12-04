@@ -2,7 +2,7 @@ import React from 'react';
 
 const ThankYou = () => {
   return (
-    <div className="relative w-full h-full bg-[url('http://soussyandkae.com/assets/bg7.jpg')] bg-cover bg-center">
+    <div className="relative w-full h-full bg-[url('https://www.internal-comm.com/assets/bg7.jpg')] bg-cover bg-center">
       {/* Dark Overlay */}
       <div className="absolute inset-0 bg-stone-950/80" />
       

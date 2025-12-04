@@ -12,6 +12,8 @@ export interface HeroVideoHandle {
   play: () => Promise<void>;
 }
 
+const FALLBACK_SRC = 'https://www.internal-comm.com/assets/wedding-video.mp4';
+
 const HeroVideo = forwardRef<HeroVideoHandle, HeroVideoProps>(({ onComplete, onReady, className, src }, ref) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const hasEndedOnce = useRef<boolean>(false); // Track if we've handled the first end
@@ -20,11 +22,30 @@ const HeroVideo = forwardRef<HeroVideoHandle, HeroVideoProps>(({ onComplete, onR
   const [showSoundNote, setShowSoundNote] = useState(false);
   const [showUnmuteIcon, setShowUnmuteIcon] = useState(false);
   const touchStartY = useRef<number | null>(null);
+  const fallbackTriggered = useRef(false);
 
   // Setup video on mount
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
+
+    // Helper to switch to fallback
+    const attemptFallback = () => {
+        if (fallbackTriggered.current) return;
+        console.warn('⚠️ HLS playback failed or not supported. Switching to fallback MP4.');
+        fallbackTriggered.current = true;
+        
+        video.src = FALLBACK_SRC;
+        video.load();
+        
+        // Ensure onReady is triggered for the fallback
+        const onFallbackReady = () => {
+             console.log('🎥 Fallback video ready');
+             onReady?.();
+             video.removeEventListener('canplay', onFallbackReady);
+        };
+        video.addEventListener('canplay', onFallbackReady);
+    };
 
     // Set playing state based on video events
     const handlePlay = () => {
@@ -35,9 +56,18 @@ const HeroVideo = forwardRef<HeroVideoHandle, HeroVideoProps>(({ onComplete, onR
       }
     };
     const handlePause = () => setIsPlaying(false);
+    
+    // Generic error handler for the video element (catches native errors)
+    const handleError = (e: Event) => {
+        console.error('🎥 Video element error:', video.error);
+        if (src.includes('.m3u8') && !fallbackTriggered.current) {
+            attemptFallback();
+        }
+    };
 
     video.addEventListener('play', handlePlay);
     video.addEventListener('pause', handlePause);
+    video.addEventListener('error', handleError);
 
     let readyTimeout: ReturnType<typeof setTimeout>;
 
@@ -64,8 +94,16 @@ const HeroVideo = forwardRef<HeroVideoHandle, HeroVideoProps>(({ onComplete, onR
         
         // Timeout fallback if manifest doesn't load
         readyTimeout = setTimeout(() => {
-          console.log('🎥 Video ready (timeout fallback)');
-          onReady?.();
+          if (!fallbackTriggered.current && video.readyState < 3) {
+             console.log('🎥 HLS load timeout, attempting fallback...');
+             // We don't necessarily want to fallback on timeout alone if it's just slow, 
+             // but if it's stuck, the fallback might be faster.
+             // For now, let's just trigger onReady to unblock UI, or we could fallback.
+             // Let's stick to existing logic of unblocking UI, but if it fails to play, 
+             // the error handler will catch it.
+             console.log('🎥 Video ready (timeout fallback)');
+             onReady?.();
+          }
         }, 3000);
         
         hls.on((window as any).Hls.Events.MANIFEST_PARSED, () => {
@@ -73,18 +111,19 @@ const HeroVideo = forwardRef<HeroVideoHandle, HeroVideoProps>(({ onComplete, onR
           clearTimeout(readyTimeout);
           onReady?.();
         });
+        
         hls.on((window as any).Hls.Events.ERROR, (event: any, data: any) => {
           if (data.fatal) {
             console.error('🎥 HLS fatal error:', data);
             hls.destroy();
             clearTimeout(readyTimeout);
-            onReady?.();
+            attemptFallback();
           }
         });
       } else {
         console.error('🎥 HLS support not available in this browser');
-        video.src = src;
-        onReady?.();
+        // No HLS support at all -> Go straight to fallback
+        attemptFallback();
       }
     } else {
       video.src = src;
@@ -94,6 +133,7 @@ const HeroVideo = forwardRef<HeroVideoHandle, HeroVideoProps>(({ onComplete, onR
     return () => {
       video.removeEventListener('play', handlePlay);
       video.removeEventListener('pause', handlePause);
+      video.removeEventListener('error', handleError);
       clearTimeout(readyTimeout);
     };
   }, [src, onReady]);
@@ -160,7 +200,6 @@ const HeroVideo = forwardRef<HeroVideoHandle, HeroVideoProps>(({ onComplete, onR
       <video
         ref={videoRef}
         className="w-full h-full object-cover"
-        src={src}
         playsInline
         preload="auto"
         // Loop removed to allow onEnded to fire
@@ -170,7 +209,7 @@ const HeroVideo = forwardRef<HeroVideoHandle, HeroVideoProps>(({ onComplete, onR
       {/* Overlay Gradient */}
       <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-black/20 pointer-events-none" />
 
-      {/* Unmute Icon (flashes if sound is muted) */}
+      {/*Unmute Icon (flashes if sound is muted) */}
       {showUnmuteIcon && (
         <div className="absolute top-6 left-6 z-30 animate-pulse">
           <svg className="w-6 h-6 text-gold-300" fill="currentColor" viewBox="0 0 24 24">
