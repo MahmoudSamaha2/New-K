@@ -5,6 +5,7 @@ import { FormData } from '../types';
 interface WizardProps {
   initialData: FormData;
   onComplete: (data: FormData) => void;
+  onBack: () => void;
 }
 
 // --- Sub-components ---
@@ -23,25 +24,27 @@ const StepLayout: React.FC<StepLayoutProps> = ({
     stepNumber, date, subtitle, title, description, question, children 
 }) => {
     return (
-        <div className="h-full flex flex-col justify-end animate-fade-in">
-            {/* Top Date Badge */}
-            <div className="absolute top-8 md:top-12 left-4 md:left-6 border-l-2 border-gold-300 pl-3 md:pl-4">
-                <p className="text-gold-200 text-xs font-serif italic">{date}</p>
-                <p className="text-white font-cinzel text-lg md:text-xl line-clamp-2">{subtitle}</p>
-            </div>
-
-            <div className="bg-stone-900/40 backdrop-blur-md border border-white/10 p-4 md:p-6 rounded-2xl shadow-xl mx-4 md:mx-0">
-                 <div className="flex justify-between items-end mb-3 md:mb-4">
-                    <div className="flex-1">
-                        <h3 className="text-xl md:text-2xl font-cinzel text-white line-clamp-2">{title}</h3>
+        <div className="h-full flex flex-col justify-end animate-fade-in pb-2">
+            <div className="bg-stone-900/80 backdrop-blur-xl border border-white/10 p-5 md:p-6 rounded-2xl shadow-2xl mx-4 md:mx-0">
+                 {/* Header Section */}
+                 <div className="mb-5 pb-5 border-b border-white/10">
+                    <div className="flex justify-between items-start mb-2">
+                        <div>
+                             <span className="text-gold-300 text-xs font-serif italic tracking-wider block mb-1">{date}</span>
+                             <h3 className="text-2xl md:text-3xl font-cinzel text-white leading-none">{title}</h3>
+                        </div>
+                        <span className="text-stone-600 text-[10px] font-sans font-bold tracking-widest opacity-60 pt-1">{stepNumber}</span>
                     </div>
+                    
+                    <p className="text-stone-400 text-xs uppercase tracking-widest font-cinzel mb-3">{subtitle}</p>
+                    
+                    <p className="text-stone-300 text-xs md:text-sm leading-relaxed font-serif italic border-l-2 border-gold-300/30 pl-3">
+                        {description}
+                    </p>
                  </div>
                  
-                 <p className="text-stone-300 text-xs md:text-sm leading-relaxed mb-4 md:mb-6 font-serif italic border-l border-stone-500 pl-2 md:pl-3 line-clamp-3">
-                    {description}
-                 </p>
-                 
-                 <div className="mb-4 md:mb-6">
+                 {/* Question & Options */}
+                 <div>
                     <p className="text-white font-medium text-sm md:text-base mb-3 md:mb-4">{question}</p>
                     <div className="space-y-2 md:space-y-3">
                         {children}
@@ -91,14 +94,28 @@ const COUNTRY_CODES = [
     { code: '+39', flag: 'IT' },
 ];
 
+// Logical Step IDs:
+// 0: Intro
+// 1: Nubian Night
+// 2: Wedding
+// 3: Travel
+// 4: Accommodation
+// 5: Post Wedding
+// 6: Return Plan
+// 7: Contact
+
+// New Requested Order: Intro (0) -> Travel (3) -> Accom (4) -> Nubian (1) -> Wedding (2) -> Post (5) -> Return (6) -> Contact (7)
+const STEP_ORDER = [0, 3, 4, 1, 2, 5, 6, 7];
+
 
 // --- Main Wizard Component ---
 
-const Wizard: React.FC<WizardProps> = ({ initialData, onComplete }) => {
-  const [step, setStep] = useState(1);
+const Wizard: React.FC<WizardProps> = ({ initialData, onComplete, onBack }) => {
+  // 'step' now refers to the index in the STEP_ORDER array
+  const [step, setStep] = useState(0);
   const [formData, setFormData] = useState<FormData>(initialData);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const totalSteps = 7;
+  const totalSteps = STEP_ORDER.length - 1; // 7
 
   // Log form started
   React.useEffect(() => {
@@ -107,16 +124,25 @@ const Wizard: React.FC<WizardProps> = ({ initialData, onComplete }) => {
     console.log('Initial Data:', initialData);
   }, []);
 
-  // Background mapping
-  const getBgImage = (stepId: number) => `url('http://soussyandkae.com/assets/bg${stepId}.jpg')`;
+  const currentLogicalStep = STEP_ORDER[step];
+
+  // Background mapping based on logical step
+  const getBgImage = (logicalStepId: number) => {
+      const imageIndex = logicalStepId === 0 ? 7 : logicalStepId;
+      return `url('https://www.internal-comm.com/assets/bg${imageIndex}.jpg')`;
+  };
 
   const handleInputChange = (field: keyof FormData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
   const nextStep = () => {
-    if (step === 5) {
-       // Conditional Logic: If "No", skip to Step 7
+    // Check logical step for conditional logic
+    if (currentLogicalStep === 5) {
+       // Conditional Logic: If "No" on Post Wedding, skip Return Plan (Logical 6)
+       // In STEP_ORDER [0, 3, 4, 1, 2, 5, 6, 7], Logical 5 is at index 5.
+       // Logical 6 is at index 6. Logical 7 is at index 7.
+       // So we want to skip to index 7.
        if (formData.postWedding.startsWith("No")) {
          setStep(7);
          return;
@@ -144,20 +170,25 @@ const Wizard: React.FC<WizardProps> = ({ initialData, onComplete }) => {
   };
 
   const prevStep = () => {
-    if (step === 7) {
-        // If we came from step 5 (skipped 6), go back to 5
+    // If we are at logical step 7 (Contact), check if we came from skipped step
+    if (currentLogicalStep === 7) {
         if (formData.postWedding.startsWith("No")) {
+            // Go back to Logical Step 5 (Post Wedding), which is index 5 in our order
             setStep(5);
             return;
         }
     }
-    if (step > 1) {
+
+    if (step > 0) {
       setStep(prev => prev - 1);
+    } else if (step === 0) {
+        onBack();
     }
   };
 
   const isCurrentStepValid = () => {
-    switch (step) {
+    switch (currentLogicalStep) {
+      case 0: return true; // Intro always valid
       case 1: return !!formData.nubianNight;
       case 2: return !!formData.wedding;
       case 3: return !!formData.travel;
@@ -169,13 +200,50 @@ const Wizard: React.FC<WizardProps> = ({ initialData, onComplete }) => {
     }
   };
 
-  // Render Step Content
+  // Render Step Content based on Logical Step ID
   const renderStepContent = () => {
-    switch(step) {
-        case 1:
+    switch(currentLogicalStep) {
+        case 0: // Intro
+            return (
+                <div className="h-full flex flex-col justify-center animate-fade-in pb-8">
+                    <div className="bg-stone-900/90 backdrop-blur-xl border border-white/10 p-6 rounded-2xl shadow-2xl mx-4 md:mx-0">
+                        {/* Header Section */}
+                        <div className="mb-6 pb-4 border-b border-white/10 text-center">
+                            <p className="text-stone-400 text-xs uppercase tracking-widest font-cinzel mb-2">Welcome</p>
+                            
+                            <p className="text-stone-300 text-sm md:text-base leading-relaxed font-serif italic px-2">
+                                You’ve seen a glimpse of what’s to come, now let’s shape your journey.
+                            </p>
+                        </div>
+                        
+                        {/* Body Text */}
+                        <div className="space-y-4 text-stone-200 text-sm font-serif leading-relaxed">
+                            <p>We’re planning three unforgettable days by the Nile:</p>
+                            <ul className="space-y-3 list-none text-stone-300">
+                                <li className="flex gap-3 items-start">
+                                    <span className="text-gold-300 mt-1.5 text-[10px]">●</span>
+                                    <span>A <span className="text-gold-200">Nubian night</span> on March 20, where music, color, and joy fill the air.</span>
+                                </li>
+                                <li className="flex gap-3 items-start">
+                                    <span className="text-gold-300 mt-1.5 text-[10px]">●</span>
+                                    <span>A <span className="text-gold-200">classic wedding</span> on March 21, elegant and full of meaning.</span>
+                                </li>
+                                <li className="flex gap-3 items-start">
+                                    <span className="text-gold-300 mt-1.5 text-[10px]">●</span>
+                                    <span>And on March 22, a <span className="text-gold-200">relaxed farewell</span> to unwind and explore Aswan a little more.</span>
+                                </li>
+                            </ul>
+                            <p className="text-xs md:text-sm text-stone-400 mt-6 italic border-t border-white/5 pt-4 text-center">
+                                To help us plan your travel, stay, and experience, just answer a few quick questions below.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            );
+        case 1: // Nubian Night (Sequence 3 -> Step 03)
             return (
                 <StepLayout 
-                   stepNumber="01"
+                   stepNumber="03"
                    date="March 20"
                    subtitle="The Day Before"
                    title="Nubian Night"
@@ -194,10 +262,10 @@ const Wizard: React.FC<WizardProps> = ({ initialData, onComplete }) => {
                     />
                 </StepLayout>
             );
-        case 2:
+        case 2: // Wedding (Sequence 4 -> Step 04)
             return (
                 <StepLayout 
-                   stepNumber="02"
+                   stepNumber="04"
                    date="March 21"
                    subtitle="The Big Day"
                    title="The Ceremony"
@@ -216,14 +284,14 @@ const Wizard: React.FC<WizardProps> = ({ initialData, onComplete }) => {
                     />
                 </StepLayout>
             );
-        case 3:
+        case 3: // Travel (Sequence 1 -> Step 01)
              return (
                 <StepLayout 
-                   stepNumber="03"
-                   date="Traveling"
-                   subtitle="Getting There"
-                   title="Travel Plans"
-                   description="We’re organizing group travel options."
+                   stepNumber="01"
+                   date="Getting There"
+                   subtitle=" "
+                   title=" "
+                   description="We’re organizing group travel — so you don’t miss the laughter on the way or the stories en route."
                    question="How would you like to travel to Aswan?"
                 >
                     <RadioOption 
@@ -238,15 +306,15 @@ const Wizard: React.FC<WizardProps> = ({ initialData, onComplete }) => {
                     />
                 </StepLayout>
             );
-        case 4:
+        case 4: // Accommodation (Sequence 2 -> Step 02)
              return (
                 <StepLayout 
-                   stepNumber="04"
-                   date="Accommodation"
-                   subtitle="Staying Together"
-                   title="Hotel Booking"
+                   stepNumber="02"
+                   date="Staying Together"
+                   subtitle=""
+                   title=" "
                    description="One roof. One vibe. One long sleepover."
-                   question="Do you want to stay at the group hotel?"
+                   question="We’re booking a hotel for everyone to stay together. Want to be part of it?"
                 >
                     <RadioOption 
                         label="Yes, book me in" 
@@ -254,13 +322,13 @@ const Wizard: React.FC<WizardProps> = ({ initialData, onComplete }) => {
                         onClick={() => handleInputChange('accommodation', "Yes")}
                     />
                     <RadioOption 
-                        label="I’ll try my luck elsewhere" 
+                        label="No thanks, I’ll arrange my own stay" 
                         selected={formData.accommodation === "No"}
                         onClick={() => handleInputChange('accommodation', "No")}
                     />
                 </StepLayout>
             );
-        case 5:
+        case 5: // Post Wedding (Sequence 5 -> Step 05)
              return (
                 <StepLayout 
                    stepNumber="05"
@@ -282,14 +350,14 @@ const Wizard: React.FC<WizardProps> = ({ initialData, onComplete }) => {
                     />
                 </StepLayout>
             );
-        case 6:
+        case 6: // Return Plan (Sequence 6 -> Step 06)
              return (
                 <StepLayout 
                    stepNumber="06"
-                   date="Return"
-                   subtitle="The Journey Home"
-                   title="Return Plan"
-                   description="Since you're joining the post-wedding trip:"
+                   date="The Journey Home"
+                   subtitle=" "
+                   title=" "
+                   description="If you're joining the post-wedding trip:"
                    question="How would you like to return?"
                 >
                     <RadioOption 
@@ -304,11 +372,10 @@ const Wizard: React.FC<WizardProps> = ({ initialData, onComplete }) => {
                     />
                 </StepLayout>
             );
-        case 7:
+        case 7: // Contact (Sequence 7 -> Final)
             return (
-                 <div className="flex flex-col h-full justify-end animate-fade-in">
-                    {/* Changed h-[85%] to h-auto max-h-[85%] to allow shrinking and reduce whitespace */}
-                    <div className="bg-stone-900/70 backdrop-blur-xl border border-white/10 p-5 md:p-6 rounded-t-3xl shadow-2xl h-auto max-h-[85%] overflow-y-auto no-scrollbar">
+                 <div className="h-full flex flex-col justify-center animate-fade-in pb-8">
+                    <div className="bg-stone-900/90 backdrop-blur-xl border border-white/10 p-5 md:p-6 rounded-2xl shadow-2xl mx-4 md:mx-0">
                         <div className="text-gold-300 text-xs font-serif uppercase tracking-widest mb-2">Final Step</div>
                         <h3 className="text-2xl md:text-3xl font-cinzel text-white mb-2">Contact Details</h3>
                         <p className="text-stone-300 text-xs md:text-sm leading-relaxed mb-4 md:mb-6">Just so we can stay connected.</p>
@@ -396,11 +463,16 @@ const Wizard: React.FC<WizardProps> = ({ initialData, onComplete }) => {
                              </div>
                         </div>
                         
-                        <div className="pt-3 text-center">
-                            <p className="text-[10px] md:text-xs text-stone-500 leading-relaxed">
-                                Our lovely friend Nourhan will be in touch.<br/>
-                                You can also reach her at: +20 122 0105839
+                        <div className="mt-6 pt-4 border-t border-white/10 text-center">
+                            <p className="text-sm text-stone-300 font-serif italic mb-2">
+                                Our lovely friend Nourhan will be in touch to confirm the details and help with any arrangements you might need.
                             </p>
+                            <div className="inline-flex items-center gap-2 bg-black/30 px-4 py-2 rounded-full border border-white/5 mt-1">
+                                <span className="text-[10px] text-stone-500 uppercase tracking-widest">You can also reach her at:</span>
+                                <a href="tel:+201220105839" className="text-gold-300 font-sans font-bold hover:text-gold-200 transition-colors">
+                                    +20 122 0105839
+                                </a>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -408,10 +480,18 @@ const Wizard: React.FC<WizardProps> = ({ initialData, onComplete }) => {
     }
   }
 
+  // Helper text for button
+  const getButtonText = () => {
+    if (isSubmitting) return "Submitting...";
+    if (step === 0) return "Next";
+    if (step === totalSteps) return "Submit";
+    return "Next";
+  };
+
   return (
     <div 
         className="relative w-full h-full bg-cover bg-center overflow-hidden"
-        style={{ backgroundImage: getBgImage(step) }}
+        style={{ backgroundImage: getBgImage(currentLogicalStep) }}
     >
       {/* Fade and Flash Transition Overlay */}
       <div 
@@ -431,8 +511,7 @@ const Wizard: React.FC<WizardProps> = ({ initialData, onComplete }) => {
             <div className="mt-3 md:mt-4 flex items-center justify-between gap-2 md:gap-4 max-w-md mx-auto w-full z-20 px-4 md:px-0">
                 <button 
                     onClick={prevStep}
-                    disabled={step === 1}
-                    className={`px-4 md:px-6 py-2 md:py-3 rounded-full border border-white/20 text-white/70 text-xs md:text-sm font-sans uppercase tracking-wider hover:bg-white/10 transition-colors whitespace-nowrap ${step === 1 ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
+                    className={`px-4 md:px-6 py-2 md:py-3 rounded-full border border-white/20 text-white/70 text-xs md:text-sm font-sans uppercase tracking-wider hover:bg-white/10 transition-colors whitespace-nowrap opacity-100`}
                 >
                     Back
                 </button>
@@ -448,7 +527,7 @@ const Wizard: React.FC<WizardProps> = ({ initialData, onComplete }) => {
                             <span className="hidden sm:inline">Submitting...</span>
                             <span className="sm:hidden">...</span>
                         </span>
-                    ) : step === totalSteps ? 'Submit RSVP' : 'Next'}
+                    ) : getButtonText()}
                 </button>
             </div>
         </div>

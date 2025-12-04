@@ -57,6 +57,11 @@ export default function App() {
     setView('wizard');
   }, []);
 
+  const handleBackToVideo = useCallback(() => {
+    console.log('🔙 Returning to video from Wizard');
+    setView('video');
+  }, []);
+
   const handleWizardComplete = async (finalData: FormData) => {
     setFormData(finalData);
     console.log('🎉 FORM SUBMISSION EVENT');
@@ -101,6 +106,7 @@ export default function App() {
           {view === 'wizard' && (
             <Wizard 
               onComplete={handleWizardComplete} 
+              onBack={handleBackToVideo}
               initialData={formData}
             />
           )}

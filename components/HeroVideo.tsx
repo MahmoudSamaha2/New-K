@@ -18,6 +18,7 @@ const HeroVideo = forwardRef<HeroVideoHandle, HeroVideoProps>(({ onComplete, onR
   const [isPlaying, setIsPlaying] = useState(false);
   const [showSoundNote, setShowSoundNote] = useState(false);
   const touchStartY = useRef<number | null>(null);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -35,6 +36,14 @@ const HeroVideo = forwardRef<HeroVideoHandle, HeroVideoProps>(({ onComplete, onR
     const handlePlay = () => {
       setIsPlaying(true);
       if (!hasEndedOnce.current) setShowSoundNote(true);
+
+      // Enable scroll up after 45 seconds of playback
+      if (!timerRef.current) {
+         timerRef.current = setTimeout(() => {
+             console.log("🔓 45s elapsed: Enabling scroll interaction");
+             setShowHint(true);
+         }, 45000);
+      }
     };
     const handlePause = () => setIsPlaying(false);
     const handleError = () => console.error("Video Error:", video.error);
@@ -49,6 +58,7 @@ const HeroVideo = forwardRef<HeroVideoHandle, HeroVideoProps>(({ onComplete, onR
         video.removeEventListener('play', handlePlay);
         video.removeEventListener('pause', handlePause);
         video.removeEventListener('error', handleError);
+        if (timerRef.current) clearTimeout(timerRef.current);
     };
   }, [src, onReady]);
 
@@ -160,7 +170,7 @@ const HeroVideo = forwardRef<HeroVideoHandle, HeroVideoProps>(({ onComplete, onR
           className={`absolute bottom-6 md:bottom-8 left-0 w-full flex flex-col items-center justify-center text-white/70 transition-opacity duration-1000 ${showHint ? 'opacity-100 animate-bounce-slow cursor-pointer' : 'opacity-0 pointer-events-none'}`}
           onClick={onComplete}
       >
-          <span className="text-[10px] uppercase tracking-widest mb-2">Scroll to RSVP</span>
+          <span className="text-[10px] uppercase tracking-widest mb-2">Scroll Up</span>
           <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 md:h-6 md:w-6 text-gold-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 10l7-7m0 0l7 7m-7-7v18" />
           </svg>
