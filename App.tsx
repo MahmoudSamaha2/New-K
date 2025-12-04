@@ -9,6 +9,7 @@ import { sendFormEmail } from './utils/emailService';
 
 const ASSETS = {
   video: 'https://www.internal-comm.com/assets/video/Kholi-wedding-inv-vid.m3u8',
+  poster: 'https://www.internal-comm.com/assets/bg1.jpg',
   images: Array.from({ length: 7 }, (_, i) => `https://www.internal-comm.com/assets/bg${i + 1}.jpg`)
 };
 
@@ -89,12 +90,13 @@ export default function App() {
         <div className="absolute inset-0 w-full h-full bg-black">
           
           {view === 'video' && (
-             <HeroVideo 
+             <HeroVideo
                 ref={videoRef}
                 src={ASSETS.video}
+                posterSrc={ASSETS.poster}
                 onComplete={handleVideoComplete}
                 onReady={handleVideoReady}
-                className="z-0" 
+                className="z-0"
              />
           )}
           
